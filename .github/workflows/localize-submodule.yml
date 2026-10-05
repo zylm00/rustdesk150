@@ -1,0 +1,35 @@
+name: Localize hbb_common Submodule
+on: workflow_dispatch
+
+jobs:
+  localize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove submodule and localize
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+
+          # 删除 submodule 配置
+          git submodule deinit -f libs/hbb_common
+          git rm -f libs/hbb_common
+          rm -rf .git/modules/libs/hbb_common
+
+          # 删除 .gitmodules 里的 hbb_common 条目
+          git config -f .gitmodules --remove-section submodule.libs/hbb_common || true
+          git add .gitmodules
+
+          # 把官方 hbb_common 代码直接克隆进来作为普通文件夹
+          git clone https://github.com/rustdesk/hbb_common.git libs/hbb_common
+          rm -rf libs/hbb_common/.git
+
+          # 提交
+          git add .
+          git commit -m "localize hbb_common as plain folder"
+          git push --force
